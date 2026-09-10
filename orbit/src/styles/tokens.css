@@ -1,0 +1,64 @@
+/* Design tokens: color, radius, type, motion (light + dark) */
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root{
+  --accent:#5b63d3;
+  --accent-hover:#4f57c7;
+  --accent-soft:rgba(91,99,211,.12);
+  --accent-line:rgba(91,99,211,.35);
+
+  --radius-sm:6px;
+  --radius:8px;
+  --radius-lg:12px;
+  --radius-xl:16px;
+
+  --font:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 4px 14px rgba(0,0,0,.06);
+  --shadow-lg:0 12px 40px rgba(0,0,0,.14);
+
+  --sidebar-w:236px;
+  --sidebar-w-collapsed:64px;
+  --header-h:56px;
+
+  --t-fast:120ms cubic-bezier(.4,0,.2,1);
+  --t:180ms cubic-bezier(.4,0,.2,1);
+}
+
+/* LIGHT */
+:root[data-theme="light"]{
+  --background:#f6f7f9;
+  --surface:#ffffff;
+  --surface-secondary:#f1f2f5;
+  --surface-hover:#f4f5f7;
+  --border:#e6e8ec;
+  --border-strong:#d7dae0;
+  --text-primary:#16181d;
+  --text-secondary:#5b616e;
+  --text-muted:#8a909c;
+  --success:#2f9e5f;
+  --warning:#c8880e;
+  --danger:#d64545;
+  --info:#3574d4;
+  --scrim:rgba(20,22,28,.42);
+}
+/* DARK */
+:root[data-theme="dark"]{
+  --background:#0d0e12;
+  --surface:#16181d;
+  --surface-secondary:#1c1f26;
+  --surface-hover:#20242c;
+  --border:#262a32;
+  --border-strong:#333844;
+  --text-primary:#e9eaee;
+  --text-secondary:#a2a7b3;
+  --text-muted:#6b7280;
+  --success:#42b97a;
+  --warning:#e0a52a;
+  --danger:#e26363;
+  --info:#5a9bf0;
+  --scrim:rgba(0,0,0,.55);
+}
