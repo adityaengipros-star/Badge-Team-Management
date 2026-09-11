@@ -8,6 +8,7 @@ import { authRoutes } from "./routes/auth";
 import { taskRoutes } from "./routes/tasks";
 import { projectRoutes } from "./routes/projects";
 import { chatRoutes } from "./routes/chat";
+import { adminRoutes } from "./routes/admin";
 import { miscRoutes } from "./routes/misc";
 
 const PORT = parseInt(process.env.PORT ?? "3000", 10);
@@ -44,6 +45,7 @@ async function main() {
   await app.register(taskRoutes);
   await app.register(projectRoutes);
   await app.register(chatRoutes);
+  await app.register(adminRoutes);
   await app.register(miscRoutes);
 
   try {

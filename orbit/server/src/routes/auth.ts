@@ -44,7 +44,7 @@ function setSessionCookie(reply: any, token: string, expires: Date) {
 }
 
 function publicUser(u: any) {
-  return { id: u.id, name: u.name, init: u.init, color: u.color, presence: u.presence, email: u.email };
+  return { id: u.id, name: u.name, init: u.init, color: u.color, presence: u.presence, email: u.email, role: u.role, status: u.status };
 }
 
 export async function authRoutes(app: FastifyInstance) {
@@ -67,6 +67,14 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.code(401).send({ error: "Invalid email or password" });
     }
 
+    // Gate on approval status.
+    if (user.status === "pending") {
+      return reply.code(403).send({ error: "Your account is awaiting admin approval." });
+    }
+    if (user.status === "declined") {
+      return reply.code(403).send({ error: "Your registration was not approved. Contact an admin." });
+    }
+
     attempts.delete(key);
     const { token, expires } = createSession(user.id);
     setSessionCookie(reply, token, expires);
@@ -79,9 +87,9 @@ export async function authRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  // Optional self-signup, off unless ALLOW_SIGNUP=true.
+  // Self-registration: creates a PENDING account. No session is issued —
+  // the user cannot log in until an admin approves them.
   app.post("/api/auth/register", (req, reply) => {
-    if (process.env.ALLOW_SIGNUP !== "true") return reply.code(403).send({ error: "signups are disabled" });
     const { name, email, password } = (req.body ?? {}) as { name?: string; email?: string; password?: string };
     if (!name || !email || !password) return reply.code(400).send({ error: "name, email and password are required" });
     if (password.length < 8) return reply.code(400).send({ error: "password must be at least 8 characters" });
@@ -91,18 +99,19 @@ export async function authRoutes(app: FastifyInstance) {
     }
     const id = `u_${randomBytes(5).toString("hex")}`;
     const palette = ["#5b63d3", "#2f9e5f", "#d64545", "#c8880e", "#8b5cf6", "#0ea5a4"];
-    db.prepare("INSERT INTO users (id,name,init,color,presence,email,password_hash) VALUES (?,?,?,?,?,?,?)").run(
+    db.prepare(
+      "INSERT INTO users (id,name,init,color,presence,email,password_hash,status,role) VALUES (?,?,?,?,?,?,?,?,?)"
+    ).run(
       id,
       name.trim(),
       name.trim()[0]?.toUpperCase() ?? "?",
       palette[Math.floor(Math.random() * palette.length)],
-      "online",
+      "offline",
       lower,
-      hashPassword(password)
+      hashPassword(password),
+      "pending",
+      "member"
     );
-    const { token, expires } = createSession(id);
-    setSessionCookie(reply, token, expires);
-    const created = db.prepare("SELECT * FROM users WHERE id = ?").get(id);
-    return reply.code(201).send(publicUser(created));
+    return reply.code(201).send({ ok: true, pending: true, message: "Registration submitted. An admin will review your request." });
   });
 }

@@ -30,6 +30,8 @@ export interface SessionUser {
   color: string;
   presence: string;
   email: string;
+  role: string;
+  status: string;
 }
 
 export function createSession(userId: string): { token: string; expires: Date } {
@@ -48,7 +50,7 @@ export function getSessionUser(token: string | undefined): SessionUser | null {
   if (!token) return null;
   const row = db
     .prepare(
-      `SELECT u.id, u.name, u.init, u.color, u.presence, u.email
+      `SELECT u.id, u.name, u.init, u.color, u.presence, u.email, u.role, u.status
        FROM sessions s JOIN users u ON u.id = s.user_id
        WHERE s.id = ? AND s.expires_at > ?`
     )

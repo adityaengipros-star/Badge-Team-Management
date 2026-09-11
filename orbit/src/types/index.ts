@@ -32,6 +32,8 @@ export interface User {
   color: string;
   presence: Presence;
   email?: string;
+  role?: "admin" | "member";
+  status?: "pending" | "active" | "declined";
 }
 
 export interface Project {

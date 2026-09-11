@@ -13,12 +13,6 @@ export default function Activity() {
 
   return (
     <div className="page">
-      <div className="page-head">
-        <div>
-          <div className="page-title">Activity</div>
-          <div className="page-sub">Everything happening across your workspace.</div>
-        </div>
-      </div>
       {activity.length === 0 ? (
         <EmptyState title="No activity yet" body="Actions across your projects will show up here." />
       ) : (

@@ -116,6 +116,21 @@ server response (and roll back on error).
 - **Build:** compile the frontend off-instance or with
   `NODE_OPTIONS=--max-old-space-size=1024 npm run build` (+ a 2 GB swap file).
 
+## Onboarding & roles
+
+New people **request access** from the login screen (name, email, password). Their
+account is created as `pending` and **cannot log in** until an admin approves it.
+
+- **Admin** (Aditya by default) sees pending requests under **Settings → Access
+  requests** and can **Approve** or **Decline**.
+- Approved users can sign in; declined users are blocked with a clear message.
+- Roles are `admin` / `member`. Existing accounts are auto-set to active members
+  on upgrade, and Aditya is promoted to admin automatically on first restart.
+
+Admin API (admin session required): `GET /api/admin/pending`,
+`GET /api/admin/users`, `POST /api/admin/users/:id/approve`,
+`POST /api/admin/users/:id/decline`.
+
 ## Deploy (Linux / EC2)
 
 Copy the project to the server, then from the project root:

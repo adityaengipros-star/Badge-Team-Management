@@ -99,6 +99,17 @@ export const api = {
   login: (email: string, password: string) =>
     http<User>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   logout: () => http<{ ok: boolean }>("/auth/logout", { method: "POST" }),
+  register: (name: string, email: string, password: string) =>
+    http<{ ok: boolean; pending: boolean; message: string }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ name, email, password }),
+    }),
+
+  // admin
+  listPending: () => http<User[]>("/admin/pending"),
+  listMembers: () => http<User[]>("/admin/users"),
+  approveUser: (id: string) => http<User>(`/admin/users/${id}/approve`, { method: "POST" }),
+  declineUser: (id: string) => http<User>(`/admin/users/${id}/decline`, { method: "POST" }),
 
   // comments
   listComments: (taskId: string) => http<Comment[]>(`/tasks/${taskId}/comments`),

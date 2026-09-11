@@ -74,6 +74,19 @@ export function seed() {
   migrate();
   seedCore(); // users/projects/tasks — guarded by users being empty
   seedChat(); // channels/messages — guarded by channels being empty (needs users first)
+  ensureAdmin(); // make sure exactly-one admin exists
+}
+
+// Promote Aditya to admin (or the first user if he's absent) when no admin exists.
+export function ensureAdmin() {
+  const admin = db.prepare("SELECT 1 FROM users WHERE role='admin' LIMIT 1").get();
+  if (admin) return;
+  const aditya = db.prepare("SELECT id FROM users WHERE email='aditya@orbit.dev'").get() as { id: string } | undefined;
+  const target = aditya ?? (db.prepare("SELECT id FROM users ORDER BY rowid LIMIT 1").get() as { id: string } | undefined);
+  if (target) {
+    db.prepare("UPDATE users SET role='admin', status='active' WHERE id=?").run(target.id);
+    console.log("✓ promoted first admin");
+  }
 }
 
 function seedCore() {

@@ -91,14 +91,7 @@ export default function Chats() {
   const title = active ? (active.kind === "dm" ? active.name : active.name) : "";
 
   return (
-    <div className="page" style={{ paddingBottom: 20 }}>
-      <div className="page-head">
-        <div>
-          <div className="page-title">Chats</div>
-          <div className="page-sub">Team communication, organized by project.</div>
-        </div>
-      </div>
-
+    <div className="page" style={{ paddingTop: 16, paddingBottom: 16 }}>
       <div className="chat-wrap">
         <div className="chat-list">
           <div className="field chat-search">

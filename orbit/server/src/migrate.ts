@@ -10,7 +10,9 @@ export function migrate() {
       color         TEXT NOT NULL,
       presence      TEXT NOT NULL DEFAULT 'offline',
       email         TEXT,
-      password_hash TEXT
+      password_hash TEXT,
+      status        TEXT NOT NULL DEFAULT 'active',
+      role          TEXT NOT NULL DEFAULT 'member'
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
@@ -94,6 +96,13 @@ export function migrate() {
   // Backfill columns for databases created before Phase 3 (auth).
   addColumnIfMissing("users", "email", "TEXT");
   addColumnIfMissing("users", "password_hash", "TEXT");
+
+  // Onboarding/roles: status = pending|active|declined, role = admin|member.
+  addColumnIfMissing("users", "status", "TEXT");
+  addColumnIfMissing("users", "role", "TEXT");
+  // Existing accounts are already trusted → active members.
+  db.exec("UPDATE users SET status='active' WHERE status IS NULL OR status='';");
+  db.exec("UPDATE users SET role='member' WHERE role IS NULL OR role='';");
 
   // Unique email (nulls allowed) so logins are unambiguous.
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL;");
