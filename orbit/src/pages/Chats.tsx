@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, Send, Hash } from "lucide-react";
 import type { Channel, Message } from "@/types";
 import { api } from "@/lib/api";
@@ -8,6 +9,9 @@ import { Avatar } from "@/components/ui/Avatar";
 const POLL_MS = 4000;
 
 export default function Chats() {
+  const [searchParams] = useSearchParams();
+  const dmParam = searchParams.get("dm");
+
   const [channels, setChannels] = useState<Channel[]>([]);
   const [dms, setDms] = useState<Channel[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -22,20 +26,29 @@ export default function Chats() {
 
   const active = [...channels, ...dms].find((c) => c.id === activeId) || null;
 
-  // Load the channel + DM list once.
-  useEffect(() => {
-    let alive = true;
-    api.listChannels()
+  // Load the channel + DM list. Extracted so we can refetch when a new DM opens.
+  function loadChannels(selectId?: string) {
+    return api.listChannels()
       .then((res) => {
-        if (!alive) return;
         setChannels(res.channels);
         setDms(res.dms);
-        setActiveId((cur) => cur ?? res.channels[0]?.id ?? res.dms[0]?.id ?? null);
+        setActiveId((cur) => selectId ?? cur ?? res.channels[0]?.id ?? res.dms[0]?.id ?? null);
       })
       .catch(() => {})
-      .finally(() => alive && setLoading(false));
-    return () => { alive = false; };
-  }, []);
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    loadChannels(dmParam ?? undefined);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Arriving from search ("message this person") sets ?dm=<id>: open it and
+  // refresh the sidebar so a brand-new DM shows up.
+  useEffect(() => {
+    if (!dmParam) return;
+    setActiveId(dmParam);
+    void loadChannels(dmParam);
+  }, [dmParam]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load messages + poll for new ones whenever the active conversation changes.
   useEffect(() => {

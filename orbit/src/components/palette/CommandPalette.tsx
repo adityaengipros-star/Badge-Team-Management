@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import { TASK_TYPE_ICON } from "@/lib/icons";
 import { useStore } from "@/store/useStore";
+import { api } from "@/lib/api";
 import { Avatar } from "@/components/ui/Avatar";
 
 type Result =
@@ -29,7 +30,8 @@ export function CommandPalette() {
   const projects = useStore((s) => s.projects);
   const users = useStore((s) => s.users);
   const selectTask = useStore((s) => s.selectTask);
-  const setFilter = useStore((s) => s.setFilter);
+  const currentUserId = useStore((s) => s.currentUserId);
+  const pushToast = useStore((s) => s.pushToast);
   const navigate = useNavigate();
 
   const [q, setQ] = useState("");
@@ -59,15 +61,15 @@ export function CommandPalette() {
       .slice(0, 4)
       .forEach((p) => out.push({ type: "proj", id: p.id, label: p.name, color: p.color }));
     users
-      .filter((u) => u.name.toLowerCase().includes(needle))
+      .filter((u) => u.id !== currentUserId && u.name.toLowerCase().includes(needle))
       .slice(0, 4)
       .forEach((u) => out.push({ type: "person", id: u.id, label: u.name }));
     return out;
-  }, [q, tasks, projects, users]);
+  }, [q, tasks, projects, users, currentUserId]);
 
   useEffect(() => setSel(0), [q]);
 
-  function exec(r: Result | undefined) {
+  async function exec(r: Result | undefined) {
     if (!r) return;
     setPalette(false);
     if (r.type === "nav") navigate(r.to);
@@ -76,8 +78,12 @@ export function CommandPalette() {
       setTimeout(() => selectTask(r.id), 80);
     } else if (r.type === "proj") navigate(`/projects/${r.id}`);
     else if (r.type === "person") {
-      setFilter("assigneeId", r.id);
-      navigate("/tasks");
+      try {
+        const { id } = await api.openDm(r.id);
+        navigate(`/chats?dm=${id}`);
+      } catch (e) {
+        pushToast((e as Error).message);
+      }
     }
   }
 
