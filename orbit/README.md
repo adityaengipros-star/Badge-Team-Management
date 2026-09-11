@@ -6,7 +6,7 @@ Built to run comfortably on a ~2 GB EC2 instance.
 > **Phase 3 — Authentication.** Team members sign in with email + password.
 > Sessions are server-side (httpOnly cookie); every API route except `/auth/*`
 > and `/health` requires a valid session, and the acting user comes from it.
-> (Built on Phase 2's Fastify + SQLite API. Collaboration is Phase 4.)
+> Collaboration (comments + persisted chat) is built and live.
 
 ## Layout
 
@@ -140,6 +140,6 @@ add HTTPS, set `COOKIE_SECURE=true` in the service file and restart.
 ## Roadmap
 
 - **Phase 3 — Authentication** ✅ (this build)
-- **Phase 4** — Comments ✅ (this build) · persisted chat still to come
+- **Phase 4 — Collaboration** ✅ Comments + persisted chat (channels, DMs, polling)
 - **Phase 5** — Connector framework, GitHub + Slack
 - **Phase 6 — Deploy to EC2** ✅ (`deploy.py`)

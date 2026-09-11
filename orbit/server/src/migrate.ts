@@ -97,6 +97,34 @@ export function migrate() {
 
   // Unique email (nulls allowed) so logins are unambiguous.
   db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL;");
+
+  // Chat (Phase 4): channels + DMs share one table; DMs are kind='dm'.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS channels (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      kind        TEXT NOT NULL DEFAULT 'channel',
+      created_at  TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS channel_members (
+      channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+      user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      PRIMARY KEY (channel_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id         TEXT PRIMARY KEY,
+      channel_id TEXT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+      user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body       TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_messages_channel ON messages(channel_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_chan_members_user ON channel_members(user_id);
+  `);
 }
 
 function addColumnIfMissing(table: string, column: string, type: string) {

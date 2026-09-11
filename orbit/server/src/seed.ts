@@ -72,7 +72,11 @@ const ACTIVITY = [
 
 export function seed() {
   migrate();
+  seedCore(); // users/projects/tasks — guarded by users being empty
+  seedChat(); // channels/messages — guarded by channels being empty (needs users first)
+}
 
+function seedCore() {
   const count = (db.prepare("SELECT COUNT(*) AS n FROM users").get() as { n: number }).n;
   if (count > 0) {
     console.log("• database already seeded, skipping");
@@ -131,4 +135,53 @@ export function seed() {
 
 if (require.main === module) {
   seed();
+}
+
+// Chat seed — runs whenever the channels table is empty, so existing
+// deployments (already-seeded users) pick up chat on the next restart.
+export function seedChat() {
+  const n = (db.prepare("SELECT COUNT(*) AS n FROM channels").get() as { n: number }).n;
+  if (n > 0) return;
+
+  const insChan = db.prepare("INSERT INTO channels (id,name,description,kind,created_at) VALUES (?,?,?,?,?)");
+  const insMem = db.prepare("INSERT OR IGNORE INTO channel_members (channel_id,user_id) VALUES (?,?)");
+  const insMsg = db.prepare("INSERT INTO messages (id,channel_id,user_id,body,created_at) VALUES (?,?,?,?,?)");
+  const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
+
+  const channels = [
+    { id: "ch_firmware", name: "firmware", desc: "Badge firmware & Zephyr" },
+    { id: "ch_badge", name: "badge", desc: "Badge project coordination" },
+    { id: "ch_hardware", name: "hardware", desc: "Board bring-up & RF" },
+    { id: "ch_general", name: "general", desc: "Team-wide announcements" },
+  ];
+
+  const firmwareMsgs = [
+    { u: "u2", t: 120, text: "Pushed the BLE OTA chunking branch — resume works but CRC fails on the last block sometimes." },
+    { u: "u1", t: 118, text: "Probably an off-by-one on the final chunk length. I hit that last month." },
+    { u: "u2", t: 117, text: "Ah that would explain it. Will check the boundary condition." },
+    { u: "u4", t: 60, text: "Heads up: battery gauge drift is back on Rev C too. Marking it blocked until we get new samples." },
+    { u: "u1", t: 58, text: "Thanks for flagging. Let's sync at standup." },
+  ];
+
+  const run = db.transaction(() => {
+    for (const c of channels) insChan.run(c.id, c.name, c.desc, "channel", ago(1000));
+    let i = 0;
+    for (const m of firmwareMsgs) insMsg.run(`seedmsg${++i}`, "ch_firmware", m.u, m.text, ago(m.t));
+    insMsg.run(`seedmsg${++i}`, "ch_general", "u1", "Welcome to Orbit chat 👋", ago(200));
+
+    // A few seed DMs for u1.
+    const dms: [string, string, string][] = [
+      ["dm_u1_u2", "u2", "Got a minute to look at the OTA CRC issue?"],
+      ["dm_u1_u5", "u5", "Nice work on the search debounce — much snappier."],
+      ["dm_u1_u3", "u3", "Can you review the dark-mode token audit when free?"],
+    ];
+    for (const [id, other, text] of dms) {
+      insChan.run(id, "", "", "dm", ago(500));
+      insMem.run(id, "u1");
+      insMem.run(id, other);
+      insMsg.run(`${id}_m1`, id, other, text, ago(90));
+    }
+  });
+  run();
+  console.log("✓ seeded chat channels + messages");
 }

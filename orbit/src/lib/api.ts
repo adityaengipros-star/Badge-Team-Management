@@ -1,7 +1,9 @@
 import type {
   ActivityEntry,
+  Channel,
   Comment,
   Connector,
+  Message,
   NewTaskInput,
   Project,
   Task,
@@ -102,4 +104,12 @@ export const api = {
   listComments: (taskId: string) => http<Comment[]>(`/tasks/${taskId}/comments`),
   addComment: (taskId: string, text: string) =>
     http<Comment>(`/tasks/${taskId}/comments`, { method: "POST", body: JSON.stringify({ text }) }),
+
+  // chat
+  listChannels: () => http<{ channels: Channel[]; dms: Channel[] }>("/channels"),
+  listMessages: (channelId: string, after?: string) =>
+    http<Message[]>(`/channels/${channelId}/messages${after ? `?after=${encodeURIComponent(after)}` : ""}`),
+  postMessage: (channelId: string, text: string) =>
+    http<Message>(`/channels/${channelId}/messages`, { method: "POST", body: JSON.stringify({ text }) }),
+  openDm: (userId: string) => http<{ id: string }>(`/dms/${userId}`, { method: "POST" }),
 };

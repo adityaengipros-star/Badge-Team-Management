@@ -76,6 +76,7 @@ export interface Channel {
   name: string;
   desc?: string;
   unread?: number;
+  kind?: "channel" | "dm";
 }
 
 export interface DirectMessage {
@@ -88,6 +89,7 @@ export interface Message {
   userId: string;
   time: string;
   text: string;
+  ts?: string;
 }
 
 export interface Connector {

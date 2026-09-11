@@ -148,3 +148,85 @@ export function addComment(taskId: string, userId: string, body: string): Commen
   db.prepare("INSERT INTO comments (id,task_id,user_id,body,created_at) VALUES (?,?,?,?,?)").run(id, taskId, userId, body, created);
   return { id, userId, text: body, time: relativeTime(created) };
 }
+
+// --- chat ----------------------------------------------------------------
+
+export interface ChannelDTO {
+  id: string;
+  name: string;
+  desc?: string;
+  kind: "channel" | "dm";
+}
+
+export interface MessageDTO {
+  id: string;
+  userId: string;
+  text: string;
+  time: string;
+  ts: string; // ISO timestamp, used as the polling cursor
+}
+
+// Public channels (team-wide) plus the current user's DMs (named after the
+// other participant).
+export function channelsForUser(userId: string): { channels: ChannelDTO[]; dms: ChannelDTO[] } {
+  const channels = db
+    .prepare("SELECT id, name, description FROM channels WHERE kind='channel' ORDER BY created_at")
+    .all() as { id: string; name: string; description: string }[];
+
+  const dmRows = db
+    .prepare(
+      `SELECT c.id AS id, other.id AS otherId, other.name AS otherName
+       FROM channels c
+       JOIN channel_members m  ON m.channel_id = c.id AND m.user_id = ?
+       JOIN channel_members mo ON mo.channel_id = c.id AND mo.user_id != ?
+       JOIN users other        ON other.id = mo.user_id
+       WHERE c.kind='dm'
+       ORDER BY c.created_at`
+    )
+    .all(userId, userId) as { id: string; otherId: string; otherName: string }[];
+
+  return {
+    channels: channels.map((c) => ({ id: c.id, name: c.name, desc: c.description, kind: "channel" as const })),
+    dms: dmRows.map((d) => ({ id: d.id, name: d.otherName, kind: "dm" as const })),
+  };
+}
+
+export function isChannelMember(channelId: string, userId: string): boolean {
+  const ch = db.prepare("SELECT kind FROM channels WHERE id = ?").get(channelId) as { kind: string } | undefined;
+  if (!ch) return false;
+  if (ch.kind === "channel") return true; // public
+  return !!db.prepare("SELECT 1 FROM channel_members WHERE channel_id=? AND user_id=?").get(channelId, userId);
+}
+
+export function channelMessages(channelId: string, afterIso?: string): MessageDTO[] {
+  const rows = afterIso
+    ? (db.prepare("SELECT id,user_id,body,created_at FROM messages WHERE channel_id=? AND created_at > ? ORDER BY created_at ASC").all(channelId, afterIso) as any[])
+    : (db.prepare("SELECT id,user_id,body,created_at FROM messages WHERE channel_id=? ORDER BY created_at ASC").all(channelId) as any[]);
+  return rows.map((r) => ({ id: r.id, userId: r.user_id, text: r.body, time: relativeTime(r.created_at), ts: r.created_at }));
+}
+
+export function addMessage(channelId: string, userId: string, body: string): MessageDTO {
+  const id = genId("msg");
+  const created = nowISO();
+  db.prepare("INSERT INTO messages (id,channel_id,user_id,body,created_at) VALUES (?,?,?,?,?)").run(id, channelId, userId, body, created);
+  return { id, userId, text: body, time: relativeTime(created), ts: created };
+}
+
+// Find (or create) the 1:1 DM channel between two users.
+export const getOrCreateDm = db.transaction((a: string, b: string): string => {
+  const existing = db
+    .prepare(
+      `SELECT c.id FROM channels c
+       JOIN channel_members m1 ON m1.channel_id=c.id AND m1.user_id=?
+       JOIN channel_members m2 ON m2.channel_id=c.id AND m2.user_id=?
+       WHERE c.kind='dm' LIMIT 1`
+    )
+    .get(a, b) as { id: string } | undefined;
+  if (existing) return existing.id;
+  const id = genId("dm");
+  db.prepare("INSERT INTO channels (id,name,description,kind,created_at) VALUES (?,?,?,?,?)").run(id, "", "", "dm", nowISO());
+  const insM = db.prepare("INSERT OR IGNORE INTO channel_members (channel_id,user_id) VALUES (?,?)");
+  insM.run(id, a);
+  insM.run(id, b);
+  return id;
+});
