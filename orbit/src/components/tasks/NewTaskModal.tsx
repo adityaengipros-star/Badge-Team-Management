@@ -23,12 +23,12 @@ export function NewTaskModal() {
   const projects = useStore((s) => s.projects);
   const users = useStore((s) => s.users);
 
-  const [form, setForm] = useState<NewTaskInput>(blank(projects[0].id));
+  const [form, setForm] = useState<NewTaskInput>(() => blank(projects[0]?.id ?? ""));
   const [labels, setLabels] = useState("");
 
   useEffect(() => {
     if (open) {
-      setForm(blank(projects[0].id));
+      setForm(blank(projects[0]?.id ?? ""));
       setLabels("");
     }
   }, [open, projects]);
