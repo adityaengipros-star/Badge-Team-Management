@@ -108,7 +108,6 @@ export default function Login() {
               <div className="auth-error">{mode === "signin" ? authError : regError}</div>
             )}
 
-<<<<<<< HEAD
             <button className="btn btn-primary auth-submit" type="submit" disabled={mode === "signin" ? loggingIn : busy}>
               {mode === "signin" ? (loggingIn ? "Signing in\u2026" : "Sign in") : busy ? "Submitting\u2026" : "Request access"}
             </button>
@@ -122,8 +121,6 @@ export default function Login() {
             </div>
           </>
         )}
-=======
->>>>>>> 70b78db (Server changes)
       </form>
     </div>
   );
